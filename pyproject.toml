@@ -1,0 +1,124 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "horse-quant-platform"
+version = "0.1.0"
+description = "Quantitative betting strategy platform for UK horse racing"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+# Async tests are plain `async def` -- no per-test marker needed.
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--import-mode=importlib",
+]
+markers = [
+    "unit: fast, isolated tests with no external dependencies",
+    "integration: requires PostgreSQL, Redis or another live service",
+    "slow: takes more than a couple of seconds (model training, backtests)",
+    "network: hits a real external API -- excluded from CI by default",
+]
+filterwarnings = [
+    "error::DeprecationWarning:backend.*",
+]
+
+[tool.coverage.run]
+source = ["backend"]
+branch = true
+omit = ["backend/main.py", "*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+# ---------------------------------------------------------------------------
+# ruff (lint + format)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["migrations/versions", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "N",         # pep8-naming
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "C4",        # comprehensions
+    "SIM",       # simplify
+    "TID",       # tidy imports
+    "PD",        # pandas-vet
+    "NPY",       # numpy
+    "RUF",
+]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "B008",    # FastAPI's Depends() in defaults is idiomatic
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+# The Racing API really does send EN DASH as a null sentinel and inside
+# weights ("8–13"). These are data values, not stylistic choices.
+"backend/services/racing_api/parsers.py" = ["RUF001", "RUF002"]
+# X / y are the universal names for a design matrix and target vector.
+"backend/ml/models/base.py" = ["N803", "N806"]
+# dict(field=value) reads far better than a brace literal for these wide,
+# many-keyed synthetic row records.
+"backend/research/synthetic.py" = ["C408"]
+"tests/unit/test_racing_api_parsers.py" = ["RUF001", "RUF002"]
+"migrations/*" = ["I001", "N999"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend", "tests"]
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+exclude = ["migrations/", "\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = [
+    "xgboost.*", "lightgbm.*", "sklearn.*", "joblib.*",
+    "plotly.*", "streamlit.*", "celery.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

@@ -1,0 +1,29 @@
+# Development, testing and quality tooling.
+-r requirements.txt
+
+# --- Testing ---------------------------------------------------------------
+pytest>=8.3,<9.0
+pytest-xdist>=3.6   # parallel runs: 15min -> 5min on 14 cores
+pytest-cov>=5.0,<8.0
+pytest-asyncio>=0.24,<2.0
+pytest-mock>=3.14,<4.0
+respx>=0.21,<0.23           # httpx mocking for the Racing API client
+freezegun>=1.5,<2.0
+factory-boy>=3.3,<4.0
+
+# --- Quality ---------------------------------------------------------------
+ruff>=0.6,<0.20
+mypy>=1.11,<2.0
+# Real pandas type checking. The research layer is pandas-heavy, and without
+# these stubs mypy silently treats every DataFrame operation as Any.
+pandas-stubs>=2.2
+scipy-stubs>=1.15
+types-reportlab>=4.2
+# Reads the generated client PDF back, so its wording can be asserted on
+# rather than assumed. The profitability guard is only real if it is checked.
+pypdf>=5.0
+types-python-dateutil>=2.9
+pre-commit>=3.8,<5.0
+
+# --- Docs / notebooks ------------------------------------------------------
+ipykernel>=6.29

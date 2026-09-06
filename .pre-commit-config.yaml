@@ -1,0 +1,41 @@
+# Install once with:  .venv/bin/pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        files: ^backend/
+        additional_dependencies:
+          - pydantic>=2.9
+          - pydantic-settings>=2.5
+          - sqlalchemy>=2.0.35
+          - types-python-dateutil
+
+  # Belt and braces: the .env file must never reach a commit.
+  - repo: local
+    hooks:
+      - id: no-dotenv
+        name: block committing .env
+        entry: .env must never be committed -- only .env.example
+        language: fail
+        files: ^\.env$

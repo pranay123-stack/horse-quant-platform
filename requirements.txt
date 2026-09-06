@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# Horse Quant Platform -- runtime dependencies (Python 3.12)
+#
+# Ranges are used here; `make lock` writes a fully pinned requirements.lock.txt
+# which is what CI and Docker images should install from.
+# ---------------------------------------------------------------------------
+
+# --- Web / API -------------------------------------------------------------
+fastapi>=0.115,<0.121
+uvicorn[standard]>=0.32,<0.40
+python-multipart>=0.0.12,<0.1
+
+# --- Configuration & validation -------------------------------------------
+pydantic>=2.9,<3.0
+pydantic-settings>=2.5,<3.0
+python-dotenv>=1.0,<2.0
+
+# --- Database --------------------------------------------------------------
+SQLAlchemy>=2.0.35,<2.1
+alembic>=1.13,<2.0
+psycopg2-binary>=2.9.9,<3.0
+
+# --- HTTP client (Racing API) ---------------------------------------------
+# Retries are implemented directly in services/racing_api/client.py rather
+# than via tenacity: the policy needs to honour Retry-After, distinguish
+# retryable from permanent auth failures, and count attempts for reporting.
+httpx>=0.27,<0.29
+
+# --- Data ------------------------------------------------------------------
+pandas>=2.2,<3.0
+numpy>=1.26,<3.0
+pyarrow>=17.0
+
+# --- Machine learning ------------------------------------------------------
+scikit-learn>=1.5,<2.0
+xgboost>=2.1,<4.0
+lightgbm>=4.5,<5.0
+joblib>=1.4,<2.0
+scipy>=1.14,<2.0
+
+# --- Dashboard (Phase 9 MVP) ----------------------------------------------
+streamlit>=1.38,<2.0
+plotly>=5.24,<7.0
+reportlab>=4.2,<5.0        # client PDF report (pure Python, no system deps)
+
+# --- Scheduling / queue (Phase 10) ----------------------------------------
+celery[redis]>=5.4,<6.0
+redis>=5.0,<7.0
+
+# --- Security (Phase 10) ---------------------------------------------------
+passlib[bcrypt]>=1.7.4,<2.0
+python-jose[cryptography]>=3.3,<4.0
+
+# --- CLI / ops -------------------------------------------------------------
+typer>=0.12,<0.20
+rich>=13.8,<15.0

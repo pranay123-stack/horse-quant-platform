@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horse Quant — Today's Predictions</title>
+<style>
+  :root {
+    --ink: #16181d; --muted: #6b7280; --line: #e3e6ea; --bg: #f7f8fa;
+    --card: #ffffff; --bet: #12703c; --betbg: #e8f5ee; --nobet: #9aa1ab;
+    --accent: #1f4e79; --warn: #8a6100; --warnbg: #fdf5e3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8eaed; --muted: #9aa1ab; --line: #2b2f36; --bg: #14161a;
+      --card: #1b1e23; --bet: #4ade80; --betbg: #16301f; --nobet: #6b7280;
+      --accent: #7fb0e0; --warn: #e0b352; --warnbg: #2e2617;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header { padding: 22px 24px 0; max-width: 1180px; margin: 0 auto; }
+  h1 { margin: 0 0 2px; font-size: 21px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  nav { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  nav button {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 9px 14px; font-size: 14px; color: var(--muted); cursor: pointer;
+    font-family: inherit;
+  }
+  nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  main { padding: 20px 24px 60px; max-width: 1180px; margin: 0 auto; }
+  section[hidden] { display: none; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  input[type=date], button.action {
+    font: inherit; padding: 7px 11px; border: 1px solid var(--line);
+    border-radius: 7px; background: var(--card); color: var(--ink);
+  }
+  button.action { cursor: pointer; }
+  button.action:hover { border-color: var(--accent); }
+  label.toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .card .v { font-size: 23px; font-weight: 650; margin-top: 3px; letter-spacing: -0.02em; }
+  .tablewrap { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 650; }
+  .pill.bet { background: var(--betbg); color: var(--bet); }
+  .pill.nobet { color: var(--nobet); }
+  tr.isbet td { background: color-mix(in srgb, var(--betbg) 45%, transparent); }
+  .race { font-weight: 600; }
+  .why { color: var(--muted); font-size: 12.5px; }
+  .empty, .banner { padding: 16px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--muted); }
+  .banner.warn { background: var(--warnbg); color: var(--warn); border-color: transparent; }
+  .headline { font-size: 15px; margin: 0 0 16px; padding: 12px 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+  dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0; }
+  dl.meta dt { color: var(--muted); font-size: 13px; }
+  dl.meta dd { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+  code { font-size: 12.5px; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Horse Quant</h1>
+  <div class="sub">UK horse racing — model probabilities against bookmaker prices</div>
+  <nav role="tablist">
+    <button role="tab" data-tab="today" aria-selected="true">Today's Predictions</button>
+    <button role="tab" data-tab="performance" aria-selected="false">Performance</button>
+    <button role="tab" data-tab="model" aria-selected="false">Model Information</button>
+  </nav>
+</header>
+
+<main>
+  <section id="today">
+    <div class="toolbar">
+      <input type="date" id="date">
+      <label class="toggle"><input type="checkbox" id="betsOnly"> Recommended bets only</label>
+      <button class="action" id="reload">Reload</button>
+      <button class="action" id="rescore" title="Re-score against current prices">Score now</button>
+    </div>
+    <div class="cards" id="todayCards"></div>
+    <div id="todayBody"></div>
+  </section>
+
+  <section id="performance" hidden>
+    <p class="headline" id="perfHeadline">Loading…</p>
+    <div class="cards" id="perfCards"></div>
+    <div id="perfNote"></div>
+  </section>
+
+  <section id="model" hidden>
+    <div id="modelBody"></div>
+  </section>
+</main>
+
+<script>
+const API = "/api/v1";
+const pct = (value, digits = 1) =>
+  value === null || value === undefined ? "—" : (value * 100).toFixed(digits) + "%";
+const signed = (value) =>
+  value === null || value === undefined ? "—" : (value >= 0 ? "+" : "") + (value * 100).toFixed(0) + "%";
+const num = (value, digits = 2) =>
+  value === null || value === undefined ? "—" : Number(value).toFixed(digits);
+
+async function getJSON(path, options) {
+  const response = await fetch(API + path, options);
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  return response.json();
+}
+
+function card(label, value) {
+  return `<div class="card"><div class="k">${label}</div><div class="v">${value}</div></div>`;
+}
+
+function banner(message, kind = "") {
+  return `<div class="banner ${kind}">${message}</div>`;
+}
+
+// --- Today ----------------------------------------------------------------
+function renderToday(data) {
+  const cards = document.getElementById("todayCards");
+  const body = document.getElementById("todayBody");
+
+  cards.innerHTML = [
+    card("Races", data.races ?? 0),
+    card("Runners", data.runners ?? 0),
+    card("Recommended bets", data.bets ?? 0),
+    card("Model", data.model ? `<span style="font-size:14px">${data.model}</span>` : "—"),
+  ].join("");
+
+  const races = data.predictions || [];
+  if (!races.length) {
+    body.innerHTML = banner(data.note || "No races scored for this date.");
+    return;
+  }
+
+  let rows = "";
+  for (const race of races) {
+    for (const horse of race.horses) {
+      const isBet = horse.recommendation === "BET";
+      rows += `<tr class="${isBet ? "isbet" : ""}">
+        <td class="race">${race.race || race.race_id}</td>
+        <td>${horse.horse}</td>
+        <td class="num">${pct(horse.probability)}</td>
+        <td class="num">${num(horse.odds)}</td>
+        <td class="num">${signed(horse.expected_value)}</td>
+        <td><span class="pill ${isBet ? "bet" : "nobet"}">${horse.recommendation}</span></td>
+        <td class="why">${horse.rejection_reason || ""}</td>
+      </tr>`;
+    }
+  }
+
+  body.innerHTML = `<div class="tablewrap"><table>
+    <thead><tr>
+      <th>Race</th><th>Horse</th><th class="num">Probability</th>
+      <th class="num">Odds</th><th class="num">Expected Value</th>
+      <th>Recommendation</th><th>Why not</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+async function loadToday() {
+  const date = document.getElementById("date").value;
+  const betsOnly = document.getElementById("betsOnly").checked;
+  const query = new URLSearchParams();
+  if (date) query.set("race_date", date);
+  if (betsOnly) query.set("bets_only", "true");
+  document.getElementById("todayBody").innerHTML = banner("Loading…");
+  try {
+    renderToday(await getJSON(`/predictions/today?${query}`));
+  } catch (error) {
+    document.getElementById("todayBody").innerHTML = banner(`Could not load: ${error.message}`, "warn");
+  }
+}
+
+async function scoreNow() {
+  const date = document.getElementById("date").value;
+  const query = new URLSearchParams();
+  if (date) query.set("race_date", date);
+  document.getElementById("todayBody").innerHTML = banner("Scoring — this rebuilds features, give it a moment…");
+  try {
+    renderToday(await getJSON(`/predict/today?${query}`, { method: "POST" }));
+  } catch (error) {
+    document.getElementById("todayBody").innerHTML = banner(`Could not score: ${error.message}`, "warn");
+  }
+}
+
+// --- Performance ----------------------------------------------------------
+async function loadPerformance() {
+  const headline = document.getElementById("perfHeadline");
+  try {
+    const data = await getJSON("/performance");
+    headline.textContent = data.headline;
+    document.getElementById("perfCards").innerHTML = [
+      card("Historical ROI", data.settled ? signed(data.roi) : "—"),
+      card("Bets settled", data.settled),
+      card("Win rate", data.settled ? pct(data.strike_rate) : "—"),
+      card("Profit / loss", data.settled ? num(data.profit, 0) : "—"),
+      card("Max drawdown", data.settled ? num(data.max_drawdown, 0) : "—"),
+      card("t-statistic", data.settled ? num(data.t_statistic) : "—"),
+    ].join("");
+    document.getElementById("perfNote").innerHTML = data.pending
+      ? banner(`${data.pending} recommended bet(s) not yet settled — excluded from every number above.`)
+      : "";
+  } catch (error) {
+    headline.textContent = "";
+    document.getElementById("perfNote").innerHTML = banner(`Could not load: ${error.message}`, "warn");
+  }
+}
+
+// --- Model ----------------------------------------------------------------
+async function loadModel() {
+  const body = document.getElementById("modelBody");
+  try {
+    const data = await getJSON("/model/status");
+    if (!data.ready) {
+      body.innerHTML = banner(data.note || "No model has been promoted yet.", "warn");
+      return;
+    }
+    const metrics = Object.entries(data.metrics || {})
+      .map(([key, value]) => `<dt>${key}</dt><dd>${num(value, 4)}</dd>`)
+      .join("");
+    body.innerHTML = `<div class="card"><dl class="meta">
+      <dt>Model</dt><dd>${data.model}</dd>
+      <dt>Version</dt><dd>${data.version}</dd>
+      <dt>Trained</dt><dd>${data.trained_at || "—"}</dd>
+      <dt>Feature version</dt><dd>${data.feature_version}</dd>
+      ${metrics}
+      <dt>Betting rules</dt><dd>${data.rules_description}</dd>
+    </dl></div>`;
+  } catch (error) {
+    body.innerHTML = banner(`Could not load: ${error.message}`, "warn");
+  }
+}
+
+// --- Tabs -----------------------------------------------------------------
+const loaders = { today: loadToday, performance: loadPerformance, model: loadModel };
+document.querySelectorAll("nav button").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach((other) =>
+      other.setAttribute("aria-selected", String(other === button)));
+    document.querySelectorAll("main section").forEach((section) =>
+      section.hidden = section.id !== button.dataset.tab);
+    loaders[button.dataset.tab]();
+  });
+});
+
+document.getElementById("reload").addEventListener("click", loadToday);
+document.getElementById("rescore").addEventListener("click", scoreNow);
+document.getElementById("betsOnly").addEventListener("change", loadToday);
+document.getElementById("date").addEventListener("change", loadToday);
+document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+loadToday();
+</script>
+</body>
+</html>

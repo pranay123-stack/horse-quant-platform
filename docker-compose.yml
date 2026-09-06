@@ -1,0 +1,108 @@
+name: horse-quant-platform
+
+# ---------------------------------------------------------------------------
+# Local stack:  postgres + redis + api  (+ optional adminer via `--profile ops`)
+#
+#   docker compose up -d postgres redis   # data services only
+#   docker compose up -d                  # full stack
+#   docker compose --profile ops up -d    # adds Adminer on :8080
+# ---------------------------------------------------------------------------
+
+x-common-env: &common-env
+  ENVIRONMENT: ${ENVIRONMENT:-local}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_JSON: ${LOG_JSON:-false}
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_USER: ${POSTGRES_USER:-horse_quant}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-horse_quant}
+  POSTGRES_DB: ${POSTGRES_DB:-horse_quant}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hqp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-horse_quant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-horse_quant}
+      POSTGRES_DB: ${POSTGRES_DB:-horse_quant}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-horse_quant} -d ${POSTGRES_DB:-horse_quant}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=256MB
+
+  redis:
+    image: redis:7-alpine
+    container_name: hqp-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: hqp-api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *common-env
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # Bind-mounted so logs, trained models and reports survive a rebuild.
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./reports:/app/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  adminer:
+    image: adminer:latest
+    container_name: hqp-adminer
+    restart: unless-stopped
+    profiles: ["ops"]
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    name: hqp_postgres_data
+  redis_data:
+    name: hqp_redis_data
